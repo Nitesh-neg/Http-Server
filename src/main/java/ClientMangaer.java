@@ -1,5 +1,6 @@
 import java.io.*;
 import java.net.Socket;
+import java.nio.file.Files;
 
 public class ClientMangaer implements Runnable {
     private final Socket clientSocket;
@@ -41,7 +42,10 @@ public class ClientMangaer implements Runnable {
             respondWithEcho(out, path.substring(6));
         } else if (path.startsWith("/user-agent")) {
             respondWithUserAgent(in, out);
-        } else {
+        } else if(path.startsWith("/files")){
+             respondWithFile(path,out);
+        }
+         else {
             respondWithNotFound(out);
         }
 
@@ -78,4 +82,20 @@ public class ClientMangaer implements Runnable {
     private void respondWithBadRequest(BufferedWriter out) throws IOException {
         out.write("HTTP/1.1 400 Bad Request\r\n\r\n");
     }
-}
+    
+    private void respondWithFile(String path, BufferedWriter out) throws IOException {
+        String filePath = Main.map.get("dir") + path.substring(6);
+        File file = new File(filePath);
+          if (file.exists()) {
+            byte[] content = Files.readAllBytes(file.toPath());
+            out.write(
+                ("HTTP/1.1 200 OK\r\nContent-Type: application/octet-stream\r\nContent-Length: " +
+                 content.length + "\r\n\r\n" + new String(content)));
+                    out.flush();
+          } else {
+            clientSocket.getOutputStream().write(
+                "HTTP/1.1 404 Not Found\r\n\r\n".getBytes());
+                out.flush();
+          }
+    }      
+ }
