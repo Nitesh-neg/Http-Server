@@ -32,22 +32,39 @@ public class Main {
             String path = parts[1];
 
             if (path.equals("/")) {
+
                   out.write("HTTP/1.1 200 OK\r\n\r\n");
+
             }else if (path.startsWith("/echo/")) {
+
                  String [] echo_break = path.split("/");
                  String content = echo_break[2];
                  out.write("HTTP/1.1 200 OK\r\nContent-Type: text/plain\r\nContent-Length: " + content.length() + "\r\n\r\n"+ content);
+
+            }else if(path.startsWith("/user-agent")){
+
+                  in.readLine();
+                  String user_agent = in.readLine();
+                  String[] user_agent_parts = user_agent.split(" ");
+                  
+                  out.write("HTTP/1.1 200 OK\r\nContent-Type: text/plain\r\nContent-Length: " + user_agent_parts[1].length() +"\r\n\r\n" + user_agent_parts[1]);
+
+
             }
             else {
+
                   out.write("HTTP/1.1 404 Not Found\r\n\r\n");
+
                 }
             } else {
                   // not valid request
                   out.write("HTTP/1.1 400 Bad Request\r\n\r\n");
                 }
 
-                out.flush();
-                clientSocket.close(); // Close connection after responding
+            out.flush();
+            clientSocket.close(); // Close connection after responding
+
+
             } catch (IOException e) {
             System.out.println("IOException: " + e.getMessage());
         }
