@@ -69,7 +69,7 @@ public class ClientMangaer implements Runnable {
                 if (path.equals("/")) {
                     respondWithOk(out);
                 } else if (path.startsWith("/echo/")) {
-                    respondWithEcho(out, path.substring(6));
+                    respondWithEcho(in,out, path.substring(6));
                 } else if (path.startsWith("/user-agent")) {
                     respondWithUserAgent(in, out);
                 } else if(path.startsWith("/files")){
@@ -90,9 +90,25 @@ public class ClientMangaer implements Runnable {
         out.write("HTTP/1.1 200 OK\r\n\r\n");
     }
 
-    private void respondWithEcho(BufferedWriter out, String content) throws IOException {
-        out.write("HTTP/1.1 200 OK\r\nContent-Type: text/plain\r\nContent-Length: "
+    private void respondWithEcho(BufferedReader in,BufferedWriter out, String content) throws IOException {
+
+        String line;
+        String content_Encoding = "";
+        while (!(line = in.readLine()).isEmpty()) {
+            if(line.startsWith("Accept-Encoding:")){
+                content_Encoding = line.split(":")[1].trim();             
+            }
+        }
+        if(content_Encoding.equals("gzip")){
+            out.write("HTTP/1.1 200 OK\r\nContent-Encoding: gzip\r\nContent-Type: text/plain\r\nContent-Length: "
                   + content.length() + "\r\n\r\n" + content);
+            out.flush();
+        }else{
+            out.write("HTTP/1.1 200 OK\r\nContent-Type: text/plain\r\nContent-Length: "
+                  + content.length() + "\r\n\r\n" + content);
+            out.flush();
+        }
+        
     }
 
     private void respondWithUserAgent(BufferedReader in, BufferedWriter out) throws IOException {
