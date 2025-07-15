@@ -2,7 +2,6 @@ import java.io.BufferedReader;
 import java.io.BufferedWriter;
 import java.io.IOException;
 import java.io.InputStreamReader;
-import java.io.OutputStream;
 import java.io.OutputStreamWriter;
 import java.net.ServerSocket;
 import java.net.Socket;
@@ -34,7 +33,12 @@ public class Main {
 
             if (path.equals("/")) {
                   out.write("HTTP/1.1 200 OK\r\n\r\n");
-            } else {
+            }else if (path.startsWith("/echo/")) {
+                 String [] echo_break = path.split("/");
+                 String content = echo_break[2];
+                 out.write("HTTP/1.1 200 OK\r\nContent-Type: text/plain\r\nContent-Length: " + content.length() + "\r\n\r\n"+ content);
+            }
+            else {
                   out.write("HTTP/1.1 404 Not Found\r\n\r\n");
                 }
             } else {
