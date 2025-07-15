@@ -1,6 +1,13 @@
-import java.io.*;
+import java.io.BufferedReader;
+import java.io.BufferedWriter;
+import java.io.File;
+import java.io.IOException;
+import java.io.InputStreamReader;
+import java.io.OutputStreamWriter;
 import java.net.Socket;
 import java.nio.file.Files;
+import java.nio.file.Path;
+import java.nio.file.Paths;
 
 public class ClientMangaer implements Runnable {
     private final Socket clientSocket;
@@ -29,28 +36,55 @@ public class ClientMangaer implements Runnable {
         String requestLine = in.readLine();
         System.out.println("Request Line: " + requestLine);
 
-        if (requestLine == null || !requestLine.startsWith("GET")) {
-            respondWithBadRequest(out);
-            return;
-        }
+        // if (requestLine == null || !requestLine.startsWith("GET")) {
+        //     respondWithBadRequest(out);
+        //     return;
+             if( requestLine.startsWith("POST")){
 
-        String path = requestLine.split(" ")[1];
+                String path = requestLine.split(" ")[1];
+                if(path.startsWith("/files/")){
 
-        if (path.equals("/")) {
-            respondWithOk(out);
-        } else if (path.startsWith("/echo/")) {
-            respondWithEcho(out, path.substring(6));
-        } else if (path.startsWith("/user-agent")) {
-            respondWithUserAgent(in, out);
-        } else if(path.startsWith("/files")){
-             respondWithFile(path,out);
-        }
-         else {
-            respondWithNotFound(out);
-        }
+                    String targetFileName = path.substring("/files/".length()).trim();
+                    String fullFilePath = Main.map.get("dir") + targetFileName;
+                    Path path_to_file = Paths.get(fullFilePath);
+                    int contentLength = 0;
+                    String line;
 
-        out.flush();
-    }
+                    while (!(line = in.readLine()).isEmpty()) {
+                            if (line.toLowerCase().startsWith("content-length:")) {
+                                contentLength = Integer.parseInt(line.split(":")[1].trim());
+                            }
+                    }
+
+                    char[] body = new char[contentLength];
+                    in.read(body, 0, contentLength); 
+                    Files.write(path_to_file, new String(body).getBytes());
+                    out.write("HTTP/1.1 201 Created\r\n\r\n");
+                    out.flush();
+                }
+        }else if(requestLine.startsWith("GET")){
+
+                String path = requestLine.split(" ")[1];
+
+                if (path.equals("/")) {
+                    respondWithOk(out);
+                } else if (path.startsWith("/echo/")) {
+                    respondWithEcho(out, path.substring(6));
+                } else if (path.startsWith("/user-agent")) {
+                    respondWithUserAgent(in, out);
+                } else if(path.startsWith("/files")){
+                    respondWithFile(path,out);
+                }
+                else {
+                    respondWithNotFound(out);
+                }
+
+                out.flush();
+            }else{
+                respondWithBadRequest(out);
+                out.flush();
+            }
+        }
 
     private void respondWithOk(BufferedWriter out) throws IOException {
         out.write("HTTP/1.1 200 OK\r\n\r\n");
