@@ -96,8 +96,14 @@ public class ClientMangaer implements Runnable {
         String content_Encoding = "";
         while (!(line = in.readLine()).isEmpty()) {
             if(line.startsWith("Accept-Encoding:")){
-                content_Encoding = line.split(":")[1].trim();             
-            }
+                String [] encodings=line.split(":")[1].trim().split(",");
+                for(String encoding : encodings){
+                    if(encoding.trim().equals("gzip")){
+                        content_Encoding = "gzip";
+                        break;            
+                 }
+              }  
+           }
         }
         if(content_Encoding.equals("gzip")){
             out.write("HTTP/1.1 200 OK\r\nContent-Encoding: gzip\r\nContent-Type: text/plain\r\nContent-Length: "
