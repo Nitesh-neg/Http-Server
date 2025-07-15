@@ -1,5 +1,6 @@
 import java.io.BufferedReader;
 import java.io.BufferedWriter;
+import java.io.ByteArrayOutputStream;
 import java.io.File;
 import java.io.IOException;
 import java.io.InputStreamReader;
@@ -8,6 +9,7 @@ import java.net.Socket;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.nio.file.Paths;
+import java.util.zip.GZIPOutputStream;
 
 public class ClientMangaer implements Runnable {
     private final Socket clientSocket;
@@ -106,9 +108,21 @@ public class ClientMangaer implements Runnable {
            }
         }
         if(content_Encoding.equals("gzip")){
-            out.write("HTTP/1.1 200 OK\r\nContent-Encoding: gzip\r\nContent-Type: text/plain\r\nContent-Length: "
-                  + content.length() + "\r\n\r\n" + content);
-            out.flush();
+
+                    ByteArrayOutputStream byteStream = new ByteArrayOutputStream();
+                    try (GZIPOutputStream gzipOut = new GZIPOutputStream(byteStream)) {
+                        gzipOut.write(content.getBytes());
+                    }
+                    byte[] compressedBytes = byteStream.toByteArray();
+
+                    out.write("HTTP/1.1 200 OK\r\n");
+                    out.write("Content-Encoding: gzip\r\n");
+                    out.write("Content-Type: text/plain\r\n");
+                    out.write("Content-Length: " + compressedBytes.length + "\r\n\r\n");
+                    out.flush();
+                    clientSocket.getOutputStream().write(compressedBytes);
+                    clientSocket.getOutputStream().flush();
+
         }else{
             out.write("HTTP/1.1 200 OK\r\nContent-Type: text/plain\r\nContent-Length: "
                   + content.length() + "\r\n\r\n" + content);
