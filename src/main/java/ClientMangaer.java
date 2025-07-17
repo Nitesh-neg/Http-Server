@@ -50,7 +50,7 @@ public class ClientMangaer implements Runnable {
         // if (requestLine == null || !requestLine.startsWith("GET")) {
         //     respondWithBadRequest(out);
         //     return;
-             if( requestLine.startsWith("POST")){
+            if( requestLine.startsWith("POST")){
 
                 String path = requestLine.split(" ")[1];
                 if(path.startsWith("/files/")){
@@ -73,7 +73,7 @@ public class ClientMangaer implements Runnable {
                     out.write("HTTP/1.1 201 Created\r\n\r\n");
                     out.flush();
                 }
-        }else if(requestLine.startsWith("GET")){
+            }else if(requestLine.startsWith("GET")){
 
                 String path = requestLine.split(" ")[1];
 
@@ -98,6 +98,7 @@ public class ClientMangaer implements Runnable {
 
             while (!(in.readLine()).isEmpty()) {
             }
+            return ; 
         }
 
     private void respondWithOk(BufferedWriter out) throws IOException {
