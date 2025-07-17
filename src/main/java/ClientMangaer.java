@@ -13,6 +13,7 @@ import java.util.zip.GZIPOutputStream;
 
 public class ClientMangaer implements Runnable {
     private final Socket clientSocket;
+    private boolean keepAlive = true;
 
     public ClientMangaer(Socket socket) {
         this.clientSocket = socket;
@@ -24,7 +25,10 @@ public class ClientMangaer implements Runnable {
             BufferedReader in = new BufferedReader(new InputStreamReader(clientSocket.getInputStream()));
             BufferedWriter out = new BufferedWriter(new OutputStreamWriter(clientSocket.getOutputStream()))
         ) {
-            handleRequest(in, out);
+
+            while(keepAlive){
+              handleRequest(in, out);
+            }
         } catch (IOException e) {
             System.out.println("Client error: " + e.getMessage());
         } finally {
@@ -37,6 +41,11 @@ public class ClientMangaer implements Runnable {
     private void handleRequest(BufferedReader in, BufferedWriter out) throws IOException {
         String requestLine = in.readLine();
         System.out.println("Request Line: " + requestLine);
+
+        if(requestLine == null ){
+            keepAlive = false;
+            return;
+        }
 
         // if (requestLine == null || !requestLine.startsWith("GET")) {
         //     respondWithBadRequest(out);
@@ -85,6 +94,9 @@ public class ClientMangaer implements Runnable {
             }else{
                 respondWithBadRequest(out);
                 out.flush();
+            }
+
+            while (!(in.readLine()).isEmpty()) {
             }
         }
 
