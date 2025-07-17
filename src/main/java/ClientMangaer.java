@@ -14,6 +14,7 @@ import java.util.zip.GZIPOutputStream;
 public class ClientMangaer implements Runnable {
     private final Socket clientSocket;
     private boolean keepAlive = true;
+    private static String requestLine;
 
     public ClientMangaer(Socket socket) {
         this.clientSocket = socket;
@@ -39,7 +40,11 @@ public class ClientMangaer implements Runnable {
     }
 
     private void handleRequest(BufferedReader in, BufferedWriter out) throws IOException {
-        String requestLine = in.readLine();
+
+        if(requestLine == null ){
+            requestLine = in.readLine();
+        }
+        
         System.out.println("Request Line: " + requestLine);
 
         // if(requestLine == null ){
@@ -96,9 +101,16 @@ public class ClientMangaer implements Runnable {
                 out.flush();
             }
 
-            while (!(in.readLine()).isEmpty()) {
+            String in_read = in.readLine();
+            while (!(in_read.equals(""))) {
+                // System.out.println("Header: " + in_read);
+                if(in_read.startsWith("GET") || in_read.startsWith("POST")){
+                    requestLine = in_read;
+                     return ;
+                }else{
+                    in_read = in.readLine();
+                }
             }
-            return ; 
         }
 
     private void respondWithOk(BufferedWriter out) throws IOException {
@@ -175,7 +187,7 @@ public class ClientMangaer implements Runnable {
                 ("HTTP/1.1 200 OK\r\nContent-Type: application/octet-stream\r\nContent-Length: " +
                  content.length + "\r\n\r\n" + new String(content)));
                     out.flush();
-          } else {
+          }else {
             clientSocket.getOutputStream().write(
                 "HTTP/1.1 404 Not Found\r\n\r\n".getBytes());
                 out.flush();
