@@ -42,10 +42,10 @@ public class ClientMangaer implements Runnable {
         String requestLine = in.readLine();
         System.out.println("Request Line: " + requestLine);
 
-        if(requestLine == null ){
-            keepAlive = false;
-            return;
-        }
+        // if(requestLine == null ){
+        //     keepAlive = false;
+        //     return;
+        // }
 
         // if (requestLine == null || !requestLine.startsWith("GET")) {
         //     respondWithBadRequest(out);
