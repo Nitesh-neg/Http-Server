@@ -1,10 +1,4 @@
-import java.io.BufferedReader;
-import java.io.BufferedWriter;
-import java.io.ByteArrayOutputStream;
-import java.io.File;
-import java.io.IOException;
-import java.io.InputStreamReader;
-import java.io.OutputStreamWriter;
+import java.io.*;
 import java.net.Socket;
 import java.nio.file.Files;
 import java.nio.file.Path;
@@ -64,6 +58,9 @@ public class ClientMangaer implements Runnable {
             }
         }
 
+        // Update keepAlive flag
+        keepAlive = !headers.getOrDefault("connection", "").equalsIgnoreCase("close");
+
         if (requestLine.startsWith("POST")) {
             String path = requestLine.split(" ")[1];
             if (path.startsWith("/files/")) {
@@ -79,7 +76,9 @@ public class ClientMangaer implements Runnable {
                 }
 
                 Files.write(pathToFile, new String(body).getBytes());
-                out.write("HTTP/1.1 201 Created\r\n\r\n");
+                out.write("HTTP/1.1 201 Created\r\n");
+                if (!keepAlive) out.write("Connection: close\r\n");
+                out.write("\r\n");
                 out.flush();
             } else {
                 respondWithNotFound(out);
@@ -109,7 +108,9 @@ public class ClientMangaer implements Runnable {
     }
 
     private void respondWithOk(BufferedWriter out) throws IOException {
-        out.write("HTTP/1.1 200 OK\r\n\r\n");
+        out.write("HTTP/1.1 200 OK\r\n");
+        if (!keepAlive) out.write("Connection: close\r\n");
+        out.write("\r\n");
     }
 
     private void respondWithEcho(BufferedWriter out, String content, Map<String, String> headers) throws IOException {
@@ -125,28 +126,43 @@ public class ClientMangaer implements Runnable {
             out.write("HTTP/1.1 200 OK\r\n");
             out.write("Content-Encoding: gzip\r\n");
             out.write("Content-Type: text/plain\r\n");
-            out.write("Content-Length: " + compressedBytes.length + "\r\n\r\n");
+            out.write("Content-Length: " + compressedBytes.length + "\r\n");
+            if (!keepAlive) out.write("Connection: close\r\n");
+            out.write("\r\n");
             out.flush();
+
             clientSocket.getOutputStream().write(compressedBytes);
             clientSocket.getOutputStream().flush();
         } else {
-            out.write("HTTP/1.1 200 OK\r\nContent-Type: text/plain\r\nContent-Length: "
-                    + content.length() + "\r\n\r\n" + content);
+            out.write("HTTP/1.1 200 OK\r\n");
+            out.write("Content-Type: text/plain\r\n");
+            out.write("Content-Length: " + content.length() + "\r\n");
+            if (!keepAlive) out.write("Connection: close\r\n");
+            out.write("\r\n");
+            out.write(content);
         }
     }
 
     private void respondWithUserAgent(BufferedWriter out, Map<String, String> headers) throws IOException {
         String userAgent = headers.getOrDefault("user-agent", "");
-        out.write("HTTP/1.1 200 OK\r\nContent-Type: text/plain\r\nContent-Length: "
-                + userAgent.length() + "\r\n\r\n" + userAgent);
+        out.write("HTTP/1.1 200 OK\r\n");
+        out.write("Content-Type: text/plain\r\n");
+        out.write("Content-Length: " + userAgent.length() + "\r\n");
+        if (!keepAlive) out.write("Connection: close\r\n");
+        out.write("\r\n");
+        out.write(userAgent);
     }
 
     private void respondWithNotFound(BufferedWriter out) throws IOException {
-        out.write("HTTP/1.1 404 Not Found\r\n\r\n");
+        out.write("HTTP/1.1 404 Not Found\r\n");
+        if (!keepAlive) out.write("Connection: close\r\n");
+        out.write("\r\n");
     }
 
     private void respondWithBadRequest(BufferedWriter out) throws IOException {
-        out.write("HTTP/1.1 400 Bad Request\r\n\r\n");
+        out.write("HTTP/1.1 400 Bad Request\r\n");
+        if (!keepAlive) out.write("Connection: close\r\n");
+        out.write("\r\n");
     }
 
     private void respondWithFile(String path, BufferedWriter out) throws IOException {
@@ -156,13 +172,17 @@ public class ClientMangaer implements Runnable {
             byte[] content = Files.readAllBytes(file.toPath());
             out.write("HTTP/1.1 200 OK\r\n");
             out.write("Content-Type: application/octet-stream\r\n");
-            out.write("Content-Length: " + content.length + "\r\n\r\n");
+            out.write("Content-Length: " + content.length + "\r\n");
+            if (!keepAlive) out.write("Connection: close\r\n");
+            out.write("\r\n");
             out.flush();
             clientSocket.getOutputStream().write(content);
             clientSocket.getOutputStream().flush();
         } else {
             clientSocket.getOutputStream().write(
-                    "HTTP/1.1 404 Not Found\r\n\r\n".getBytes()
+                    ("HTTP/1.1 404 Not Found\r\n" +
+                     (keepAlive ? "" : "Connection: close\r\n") +
+                     "\r\n").getBytes()
             );
             clientSocket.getOutputStream().flush();
         }
